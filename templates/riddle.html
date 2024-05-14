@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>riddle</title>
+    <link rel="stylesheet" href="../static/riddle.css">
+</head>
+<body>
+<div class="body">
+    <div class="selects">
+        <ul class="box1">
+            <h5>answer</h5>
+            <li class="select" draggable="true">{{ data[2]|safe }}</li>
+            <li class="select" draggable="true">{{ data[3]|safe }}</li>
+            <li class="select" draggable="true">{{ data[4]|safe }}</li>
+            <li class="select" draggable="true">{{ data[5]|safe }}</li>
+            <li style="opacity: 0" class="answer">{{ data[6]|safe }}</li>
+        </ul>
+    </div>
+    <div class="problems">
+        <form action="http://127.0.0.1:5000/riddle" method="post">
+            <label>
+                <select name="ids">
+                    <option selected>1</option>
+                    {% for i in nums %}
+                        <option>{{ i|safe }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <input type="submit" value="submit">
+        </form>
+        <h5>problem</h5>
+        <ul class="problem">
+            {{ data[1]|safe }}
+        </ul>
+    </div>
+</div>
+<script>
+    const demo = document.querySelectorAll('.select');
+    let dragDom = null;
+    for (let i = 0, len = demo.length; i < len; i++) {
+        demo[i].ondragstart = function () {
+            dragDom = this;
+            console.log(dragDom);
+        }
+    }
+    const boxFrame = document.querySelector('.problem');
+    boxFrame.ondragover = function (ev) {
+        ev.preventDefault();
+    }
+    boxFrame.ondrop = function () {
+        console.log(dragDom1);
+        this.appendChild(dragDom1);
+        let close = dragDom1.innerText;
+        if (close === document.querySelector('.answer').innerText) {
+            window.alert("正确!!");
+        } else {
+            window.alert('错误!!');
+        }
+    }
+
+    const demo1 = document.querySelectorAll('.select');
+    let dragDom1 = null;
+    for (let i = 0, len = demo1.length; i < len; i++) {
+        demo[i].ondragstart = function () {
+            dragDom1 = this;
+            console.log(dragDom1);
+        }
+    }
+    const boxFrame1 = document.querySelector('.box1');
+    boxFrame1.ondragover = function (ev) {
+        ev.preventDefault();
+    }
+    boxFrame1.ondrop = function () {
+        console.log(dragDom1);
+        this.appendChild(dragDom1);
+    }
+
+</script>
+</body>
+</html>
