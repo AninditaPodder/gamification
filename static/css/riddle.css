@@ -1,0 +1,42 @@
+div.body {
+    left: 10%;
+    top: 10%;
+    width: 80%;
+    height: 60%;
+    background-color: aliceblue;
+    border-radius: 5px;
+    box-shadow: 2px 2px 2px 2px;
+    position: absolute;
+}
+
+div.selects {
+    top: 10%;
+    width: 50%;
+    height: 100%;
+    position: absolute;
+}
+
+div.problems {
+    left: 50%;
+    width: 50%;
+    height: 100%;
+    background-color: aliceblue;
+    box-shadow: 1px 1px 1px 1px;
+    position: absolute;
+
+}
+
+ul {
+    width: 100%;
+    height: 100%;
+}
+
+li {
+    list-style: none;
+    background-color: azure;
+    height: 30px;
+    width: 150px;
+    margin-bottom: 20px;
+    box-shadow: 1px 1px 1px 1px;
+    border-radius: 4px;
+}
