@@ -77,7 +77,9 @@
                       <span class="fa fa-star {% if total_score >= 1000 %} checked {% endif %}"></span>
                     </div>
                     <div class="text-center">
+                      {% if next_target != 0 %}
                       You're <span class="text-primary fw-bold">{{next_target - total_score}}</span> points from your next star
+                      {% endif %}
                     </div>
                   </div>
                 </div>

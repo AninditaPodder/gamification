@@ -168,9 +168,9 @@ def dashboard():
     id = current_user.id
     enrolled_courses = get_enrolled_courses(id)
     user_to_update=User.query.get_or_404(id)
-    total_score =  QuizSubmission.query.filter_by(user_id=id, is_correct_answer=True).count()
+    total_score = QuizSubmission.query.filter_by(user_id=id, is_correct_answer=True).count()
     marks_level = [50, 100, 200, 500, 1000]
-    next_target = next_largest_mark(total_score, marks_level)
+    next_target = next_higher_number(total_score, marks_level)
 
 
     if request.method == 'POST':
@@ -364,17 +364,11 @@ def admin():
         return redirect(url_for('dashboard'))
     
 
-def next_largest_mark(student_mark, marks):
-    closest_greater_mark = None
-    min_difference = float('inf')
-
-    for mark in marks:
-        difference = mark - student_mark
-        if difference > 0 and difference < min_difference:
-            min_difference = difference
-            closest_greater_mark = mark
-
-    return closest_greater_mark    
+def next_higher_number(number, marks_level):
+    for mark in marks_level:
+        if mark > number:
+            return mark
+    return 0    
 
 ################################################################ DB Models ################################################################################
 
