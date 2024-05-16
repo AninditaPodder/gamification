@@ -222,7 +222,7 @@ def page_not_found(e):
 @app.route('/quiz')
 def quiz():
     #id=current_user.id
-    enrolled_courses = Course.query.all()
+    enrolled_courses = current_user.courses
 
     return render_template('quiz.html', 
                             enrolled_courses=enrolled_courses )
@@ -354,9 +354,11 @@ def quiz_exam(quiz_set_id):
 @app.route('/admin')
 @login_required
 def admin():
-    id = current_user.id 
-    if id == 21:
-        return render_template('admin.html')  
+    current_user_email = current_user.email
+    if current_user_email == 'admin@gmail.com':
+        our_users = User.query.order_by(User.date_added)
+        return render_template('admin.html',
+                               our_users=our_users)  
     else:
         flash("Sorry you must be the Admin to access the admin page...")
         return redirect(url_for('dashboard'))
