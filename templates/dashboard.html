@@ -17,8 +17,10 @@
 	<h2>Dashboard</h2>
 	<br/><br/>
     <div class="card">
-        <div class="card-header">
-          {{ current_user.first_name }} -  {{ current_user.last_name }}
+        <div class="card-header ">
+          <div class="row">
+            <div class="col-6">{{ current_user.first_name }} -  {{ current_user.last_name }} </div><div class="col-6"> <span style="float: right;">Total Score: {{total_score}}</span></div>
+          </div>
         </div>
         <div class="card-body">         
           <p class="card-text">
@@ -60,7 +62,19 @@
                   
                 </div>
                 <div class="col-4">
-                  <img src="{{ url_for('static', filename='images/default_profile_pic.png')}}" width="200" align="right">
+                  <div class="d-flex flex-column justify-content-end" style="float: right;">
+                     <img src="{{ url_for('static', filename='images/default_profile_pic.png')}}">
+                     <div class="mt-2 text-center">
+                      <span class="fa fa-star {% if total_score >= 50 %} checked {% endif %}"></span>
+                      <span class="fa fa-star {% if total_score >= 100 %} checked {% endif %}"></span>
+                      <span class="fa fa-star {% if total_score >= 200 %} checked {% endif %}"></span>
+                      <span class="fa fa-star {% if total_score >= 500 %} checked {% endif %}"></span>
+                      <span class="fa fa-star {% if total_score >= 1000 %} checked {% endif %}"></span>
+                    </div>
+                    <div class="text-center">
+                      You're <span class="text-primary fw-bold">{{next_target - total_score}}</span> points from your next star
+                    </div>
+                  </div>
                 </div>
               </div>
       </div>

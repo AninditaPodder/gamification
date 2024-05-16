@@ -165,6 +165,11 @@ def dashboard():
     form=UserForm()
     id = current_user.id
     user_to_update=User.query.get_or_404(id)
+    total_score =  QuizSubmission.query.filter_by(user_id=id, is_correct_answer=True).count()
+    marks_level = [50, 100, 200, 500, 1000]
+    next_target = next_largest_mark(total_score, marks_level)
+
+
     if request.method == 'POST':
         user_to_update.first_name =  request.form['first_name']
         user_to_update.last_name =  request.form['last_name']
@@ -175,17 +180,23 @@ def dashboard():
             flash("User Updated Successfully!")
             return render_template("dashboard.html", 
                                     form=form,
-                                    user_to_update=user_to_update)
+                                    user_to_update=user_to_update,
+                                    total_score=total_score,
+                                    next_target = next_target)
 
         except:
             flash("Looks like there was a problem....try again!")
             return render_template("dashboard.html", 
                                     form=form,
-                                    user_to_update=user_to_update)
+                                    user_to_update=user_to_update,
+                                    total_score=total_score,
+                                    next_target=next_target)
     else:
         return render_template("dashboard.html", 
                                     form=form,
-                                    user_to_update=user_to_update)
+                                    user_to_update=user_to_update,
+                                    total_score=total_score,
+                                    next_target=next_target)
     return render_template('dashboard.html')
 
 
@@ -243,8 +254,9 @@ def quiz_selection(course_id):
 def quiz_exam(quiz_set_id):
     quiz_questions=QuizQuestion.query.filter_by(quiz_set_id=quiz_set_id)
     quiz_question_count = quiz_questions.count()
+    quiz_set = QuizSet.query.get_or_404(quiz_set_id);
     current_user_id = current_user.id
-    total_correct_answer = 0
+    total_correct_answer =  QuizSubmission.query.filter_by(user_id=current_user_id, quiz_set_id=quiz_set_id, is_correct_answer=True).count()
     if request.method == 'POST':
         for quiz_question in quiz_questions:
             given_answer = int(request.form[f'question-{quiz_question.id}'])
@@ -260,6 +272,7 @@ def quiz_exam(quiz_set_id):
             flash("Yor Quiz Exam is Over! Thank You.") 
             return render_template('quiz_exam.html',
                             quiz_set_id=quiz_set_id,
+                            quiz_set=quiz_set,
                             quiz_questions=quiz_questions,
                             quiz_question_count = quiz_question_count,
                             total_correct_answer=total_correct_answer)
@@ -267,12 +280,14 @@ def quiz_exam(quiz_set_id):
             flash("Looks like there was a problem submitting your exam....try again!") 
             return render_template('quiz_exam.html',
                             quiz_set_id=quiz_set_id,
+                            quiz_set=quiz_set,
                             quiz_questions=quiz_questions,
                             quiz_question_count = quiz_question_count,
                             total_correct_answer=total_correct_answer)
 
     return render_template('quiz_exam.html',
                             quiz_set_id=quiz_set_id,
+                            quiz_set=quiz_set,
                             quiz_questions=quiz_questions,
                             quiz_question_count = quiz_question_count,
                             total_correct_answer=total_correct_answer)
@@ -290,6 +305,19 @@ def admin():
     else:
         flash("Sorry you must be the Admin to access the admin page...")
         return redirect(url_for('dashboard'))
+    
+
+def next_largest_mark(student_mark, marks):
+    closest_greater_mark = None
+    min_difference = float('inf')
+
+    for mark in marks:
+        difference = mark - student_mark
+        if difference > 0 and difference < min_difference:
+            min_difference = difference
+            closest_greater_mark = mark
+
+    return closest_greater_mark    
 
 ################################################################ DB Models ################################################################################
 
