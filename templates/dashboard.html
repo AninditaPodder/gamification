@@ -62,7 +62,13 @@
                 </div>
                 <div class="col-4">
                   <div class="d-flex flex-column justify-content-end" style="float: right;">
-                     <img src="{{ url_for('static', filename='images/default_profile_pic.png')}}">
+                     <img src="{{ url_for('static', filename='images/default_profile_pic.png')}}" style="{% if total_score >= 1000 %} border:5px solid #FFD700 
+                                                                                                          {% elif total_score >= 500 %} border:5px solid #C0C0C0 
+                                                                                                          {% elif total_score >= 200 %} border:5px solid red 
+                                                                                                          {% elif total_score >= 100 %} border:5px solid green 
+                                                                                                          {% elif total_score >= 50 %} border:5px solid blue 
+                                                                                                          {% else %} 
+                                                                                                          {% endif %}">
                      <div class="mt-2 text-center">
                       <span class="fa fa-star {% if total_score >= 50 %} checked {% endif %}"></span>
                       <span class="fa fa-star {% if total_score >= 100 %} checked {% endif %}"></span>
