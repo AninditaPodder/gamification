@@ -6,9 +6,9 @@ from sqlalchemy import exists, select
 from flask_migrate import Migrate
 from werkzeug.security import generate_password_hash, check_password_hash 
 from flask_login import UserMixin, login_user, LoginManager, login_required, logout_user, current_user
-from webforms import UserForm, LoginForm, PostForm, SearchForm, NamerForm, PasswordForm
+from webforms import UserForm, LoginForm,  SearchForm, NamerForm, PasswordForm,NewPostForm,NewCommentForm
 from flask_ckeditor import CKEditor
-import numpy as np
+from models import db,User,Course,Enrollment,QuizSet,QuizQuestion,QuizSubmission,Post,Comment
 
 #export FLASK_ENV=development
 #export FLASK_APP=gamification.py
@@ -26,7 +26,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:root@localhost/gam
 #Secret Key
 app.config['SECRET_KEY'] = "@45665Fdsdss456kl"
 #Initialize the Database
-db = SQLAlchemy(app)
+db.init_app(app)
 migrate=Migrate(app,db)
 app.app_context().push()
 
@@ -242,10 +242,37 @@ def forum_list():
 @login_required
 @app.route('/forum/<int:id>', methods=['GET', 'POST'])
 def forum_page(id):
-    #id=current_user.id
-    #enrolled_courses = Course.query.all()
+    post_form = NewPostForm()
+    comment_form = NewCommentForm()
+    posts = Post.query.filter_by(discussion_forum_id=id).all()
+    comments = Comment.query.join(Post).filter(Post.discussion_forum_id == id).all()
 
-    return render_template('forum.html', )
+    if post_form.validate_on_submit() and post_form.submit.data:
+        post = Post(
+            discussion_forum_id=id,
+            user_id=current_user.id,
+            posted_date=datetime.now(),
+            content = post_form.question.data
+        )
+
+        db.session.add(post)
+        db.session.commit()
+
+        return redirect(url_for('forum_page', id=id))
+
+    if comment_form.validate_on_submit() and comment_form.submit.data:
+        comment = Comment(
+            post_id=request.form.get('post_id'),
+            user_id=current_user.id,
+            commented_date=datetime.now(),
+            content = comment_form.comment.data
+        )
+
+        db.session.add(comment)
+        db.session.commit()
+        return redirect(url_for('forum_page', id=id))
+
+    return render_template('forum.html', posts = posts, comments =comments, id=id, post_form = post_form, comment_form = comment_form)
 
 @app.route('/enrol/<int:id>', methods=['GET', 'POST'])
 @login_required
@@ -370,86 +397,7 @@ def next_higher_number(number, marks_level):
             return mark
     return 0    
 
-################################################################ DB Models ################################################################################
 
-user_course = db.Table('user_course',
-                    db.Column('user_id', db.Integer, db.ForeignKey('user.id')),
-                    db.Column('course_id', db.Integer, db.ForeignKey('course.id'))
-                    )
-
-# Create Model
-class User(db.Model, UserMixin):
-    id = db.Column(db.Integer, primary_key=True)
-    first_name = db.Column(db.String(200), nullable=False)
-    last_name = db.Column(db.String(200), nullable=False)
-    username = db.Column(db.String(20), nullable=False, unique=True)
-    email = db.Column(db.String(120), nullable=False, unique=True)
-    role = db.Column(db.String(50), nullable=False)
-    enrolments = db.relationship('Enrollment', backref='enroller')
-    date_added = db.Column(db.DateTime, default=datetime.utcnow)
-    #Do some password stuff
-    password_hash = db.Column(db.String(128))
-    #User Can Have Many Courses
-    courses = db.relationship('Course', secondary=user_course, backref='users') #user.courses + course.users (backref comes into play)
-    #User Can Have Many QuizSubmission
-    quiz_submissions = db.relationship('QuizSubmission', backref='quiz_taker')
-
-    @property
-    def password(self):
-        raise AttributeError('password is not a readable attribute!')
-
-    @password.setter
-    def password(self, password):
-        self.password_hash = generate_password_hash(password)
-
-    def verify_password(self, password):
-        return check_password_hash(self.password_hash, password)
-
-    # Create A String
-    def __repr__(self):
-        return '<Name %r>' % self.name
-
-
-# Create Course Model
-class Course(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(200), nullable=False)
-    enrollments = db.relationship('Enrollment', backref='course')
-    quiz_sets = db.relationship('QuizSet', backref='course')
-
-# Create quiz_set Model
-class QuizSet(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(200), nullable=False)
-    course_id = db.Column(db.Integer, db.ForeignKey('course.id'))
-    quiz_questions = db.relationship('QuizQuestion', backref='quiz_set')
-    quiz_submissions = db.relationship('QuizSubmission', backref='quiz_set')
-
-class QuizQuestion(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    question = db.Column(db.String(255), nullable=False)
-    option1 = db.Column(db.String(255), nullable=False)
-    option2 = db.Column(db.String(255), nullable=False)
-    option3 = db.Column(db.String(255), nullable=False)
-    option4 = db.Column(db.String(255), nullable=False)
-    correct_answer = db.Column(db.Integer, nullable=False)
-    quiz_set_id = db.Column(db.Integer, db.ForeignKey('quiz_set.id'))
-    quiz_submissions = db.relationship('QuizSubmission', backref='quiz_question')
-
-
-class QuizSubmission(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    quiz_set_id = db.Column(db.Integer, db.ForeignKey('quiz_set.id'))
-    quiz_question_id = db.Column(db.Integer, db.ForeignKey('quiz_question.id')) 
-    given_answer =  db.Column(db.Integer, nullable=False)
-    is_correct_answer = db.Column(db.Boolean, default=False, nullable=False)
-
-class Enrollment(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    course_id = db.Column(db.Integer, db.ForeignKey('course.id'))
-    enrollmentDate = db.Column(db.DateTime, default=datetime.utcnow)
 
 def get_enrolled_courses(user_id):
     user = User.query.get(user_id)
