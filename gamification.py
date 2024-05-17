@@ -10,6 +10,8 @@ from webforms import UserForm, LoginForm,  SearchForm, NamerForm, PasswordForm,N
 from flask_ckeditor import CKEditor
 #from models import db,User,Course,Enrollment,QuizSet,QuizQuestion,QuizSubmission,Post,Comment
 import numpy as np
+from sqlalchemy import exists
+
 
 #export FLASK_ENV=development
 #export FLASK_APP=gamification.py
@@ -312,12 +314,9 @@ def quiz_selection(course_id):
     #quiz_sets = QuizSet.query.filter_by(course_id=course_id)
     #results = QuizSet.query.filter_by(course_id=course_id).with_entities(QuizSet.id, QuizSet.name, QuizSet.attribute1).add_columns("value_for_attribute2").all()
 
-    from sqlalchemy import exists
-
-
 
     # Define a subquery to check if the quiz_set_id exists in the quiz_submission table
-    subquery = exists().where((QuizSubmission.quiz_set_id == QuizSet.id) &(QuizSubmission.user_id == current_user.id))
+    subquery = exists().where((QuizSubmission.quiz_set_id == QuizSet.id) & (QuizSubmission.user_id == current_user.id))
 
     # Filter QuizSet records by course_id and add a new attribute indicating if the quiz_set_id exists in the quiz_submission table
     quiz_sets = (
@@ -353,7 +352,7 @@ def quiz_exam(quiz_set_id):
             db.session.add(quiz_submission)
         try:   
             db.session.commit()
-            flash("Yor Quiz Exam is Over! Thank You.") 
+            flash("Your Quiz Exam is Over! Thank You.") 
             return render_template('quiz_exam.html',
                             quiz_set_id=quiz_set_id,
                             quiz_set=quiz_set,
