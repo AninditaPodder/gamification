@@ -242,10 +242,37 @@ def forum_list():
 @login_required
 @app.route('/forum/<int:id>', methods=['GET', 'POST'])
 def forum_page(id):
-    #id=current_user.id
-    #enrolled_courses = Course.query.all()
+    post_form = NewPostForm()
+    comment_form = NewCommentForm()
+    posts = Post.query.filter_by(discussion_forum_id=id).all()
+    comments = Comment.query.join(Post).filter(Post.discussion_forum_id == id).all()
 
-    return render_template('forum.html', )
+    if post_form.validate_on_submit() and post_form.submit.data:
+        post = Post(
+            discussion_forum_id=id,
+            user_id=current_user.id,
+            posted_date=datetime.now(),
+            content = post_form.question.data
+        )
+
+        db.session.add(post)
+        db.session.commit()
+
+        return redirect(url_for('forum_page', id=id))
+
+    if comment_form.validate_on_submit() and comment_form.submit.data:
+        comment = Comment(
+            post_id=request.form.get('post_id'),
+            user_id=current_user.id,
+            commented_date=datetime.now(),
+            content = comment_form.comment.data
+        )
+
+        db.session.add(comment)
+        db.session.commit()
+        return redirect(url_for('forum_page', id=id))
+
+    return render_template('forum.html', posts = posts, comments =comments, id=id, post_form = post_form, comment_form = comment_form)
 
 @app.route('/enrol/<int:id>', methods=['GET', 'POST'])
 @login_required
