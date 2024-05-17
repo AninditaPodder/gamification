@@ -2,7 +2,7 @@ from flask import Flask, url_for, redirect, render_template, request
 import pymysql
 
 app = Flask(__name__)
-# 这里放数据库的信息用户,密码,数据库
+
 db = {'host': 'localhost', 'user': 'root', 'password': 'Poilkj9544', 'db': 'riddle', 'charset': 'utf8'}
 db = pymysql.connect(**db)
 cursor = db.cursor()
