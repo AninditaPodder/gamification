@@ -6,9 +6,9 @@ from sqlalchemy import exists, select
 from flask_migrate import Migrate
 from werkzeug.security import generate_password_hash, check_password_hash 
 from flask_login import UserMixin, login_user, LoginManager, login_required, logout_user, current_user
-from webforms import UserForm, LoginForm, PostForm, SearchForm, NamerForm, PasswordForm
+from webforms import UserForm, LoginForm,  SearchForm, NamerForm, PasswordForm,NewPostForm,NewCommentForm
 from flask_ckeditor import CKEditor
-import numpy as np
+from models import db,User,Course,Enrollment,QuizSet,QuizQuestion,QuizSubmission,Post,Comment
 
 #export FLASK_ENV=development
 #export FLASK_APP=gamification.py
