@@ -26,7 +26,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:root@localhost/gam
 #Secret Key
 app.config['SECRET_KEY'] = "@45665Fdsdss456kl"
 #Initialize the Database
-db = SQLAlchemy(app)
+db.init_app(app)
 migrate=Migrate(app,db)
 app.app_context().push()
 
