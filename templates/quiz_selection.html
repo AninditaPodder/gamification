@@ -17,10 +17,10 @@
                 <tr>
                     <td>
                         {% if  is_quiz_taken %}
-                            {{quiz_set.id}}.  {{quiz_set.name}} <a href="{{url_for('quiz_exam',quiz_set_id=quiz_set.id)}}" class="btn btn-outline-secondary btn-sm">View Result</a>
+                            {{ loop.index }}.  {{quiz_set.name}} <a href="{{url_for('quiz_exam',quiz_set_id=quiz_set.id)}}" class="btn btn-outline-secondary btn-sm">View Result</a>
                         {% else %} 
                             
-                            {{quiz_set.id}}.  {{quiz_set.name}} <a href="{{url_for('quiz_exam',quiz_set_id=quiz_set.id)}}" class="btn btn-outline-secondary btn-sm">Start Quiz</a>
+                            {{ loop.index }}.  {{quiz_set.name}} <a href="{{url_for('quiz_exam',quiz_set_id=quiz_set.id)}}" class="btn btn-outline-secondary btn-sm">Start Quiz</a>
                         {% endif %}
                     </td>
                 </tr>

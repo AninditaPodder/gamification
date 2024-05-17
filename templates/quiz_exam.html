@@ -18,7 +18,7 @@
             {{ form.hidden_tag() }}
 
             {% for quiz_question in quiz_questions %}
-            <p>{{quiz_question.id}}. {{quiz_question.question}}</p>
+            <p>{{ loop.index }}. {{quiz_question.question}}</p>
             <input type="radio" id="question-{{quiz_question.id}}-option-1" name="question-{{quiz_question.id}}" value="1">
             <label for="question-{{quiz_question.id}}-option-1">{{quiz_question.option1}}</label><br>
             <input type="radio" id="question-{{quiz_question.id}}-option-2" name="question-{{quiz_question.id}}" value="2">

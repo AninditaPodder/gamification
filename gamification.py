@@ -288,7 +288,7 @@ def quiz_selection(course_id):
 
 
     # Define a subquery to check if the quiz_set_id exists in the quiz_submission table
-    subquery = exists().where(QuizSubmission.quiz_set_id == QuizSet.id)
+    subquery = exists().where((QuizSubmission.quiz_set_id == QuizSet.id) &(QuizSubmission.user_id == current_user.id))
 
     # Filter QuizSet records by course_id and add a new attribute indicating if the quiz_set_id exists in the quiz_submission table
     quiz_sets = (
