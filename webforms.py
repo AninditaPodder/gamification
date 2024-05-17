@@ -40,6 +40,14 @@ class PostForm(FlaskForm):
 class SearchForm(FlaskForm):
     searched = StringField("Searched", validators=[DataRequired()])
     submit = SubmitField("Submit") 
+
+class NewPostForm(FlaskForm):
+    question = TextAreaField('Question', validators=[DataRequired()])
+    submit = SubmitField('Post')
+
+class NewCommentForm(FlaskForm):
+    comment = TextAreaField('Comment',validators=[DataRequired()])
+    submit = SubmitField('Comment')
 ################################################################ TEST ################################################################################
 
  # Create a Form Class
