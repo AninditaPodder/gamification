@@ -5,9 +5,10 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import exists, select
 from flask_migrate import Migrate
 from werkzeug.security import generate_password_hash, check_password_hash 
-from flask_login import UserMixin, login_user, LoginManager, login_required, logout_user, current_user
-from webforms import UserForm, LoginForm, PostForm, SearchForm, NamerForm, PasswordForm
+from flask_login import  UserMixin,login_user, LoginManager, login_required, logout_user, current_user
+from webforms import UserForm, LoginForm,  SearchForm, NamerForm, PasswordForm,NewPostForm,NewCommentForm
 from flask_ckeditor import CKEditor
+#from models import db,User,Course,Enrollment,QuizSet,QuizQuestion,QuizSubmission,Post,Comment
 import numpy as np
 
 #export FLASK_ENV=development
@@ -222,6 +223,7 @@ def page_not_found(e):
 @app.route('/quiz')
 def quiz():
     #id=current_user.id
+    #enrolled_courses = get_courses_to_enroll(current_user.id)
     enrolled_courses = current_user.courses
 
     return render_template('quiz.html', 
@@ -242,10 +244,37 @@ def forum_list():
 @login_required
 @app.route('/forum/<int:id>', methods=['GET', 'POST'])
 def forum_page(id):
-    #id=current_user.id
-    #enrolled_courses = Course.query.all()
+    post_form = NewPostForm()
+    comment_form = NewCommentForm()
+    posts = Post.query.filter_by(discussion_forum_id=id).all()
+    comments = Comment.query.join(Post).filter(Post.discussion_forum_id == id).all()
 
-    return render_template('forum.html', )
+    if post_form.validate_on_submit() and post_form.submit.data:
+        post = Post(
+            discussion_forum_id=id,
+            user_id=current_user.id,
+            posted_date=datetime.now(),
+            content = post_form.question.data
+        )
+
+        db.session.add(post)
+        db.session.commit()
+
+        return redirect(url_for('forum_page', id=id))
+
+    if comment_form.validate_on_submit() and comment_form.submit.data:
+        comment = Comment(
+            post_id=request.form.get('post_id'),
+            user_id=current_user.id,
+            commented_date=datetime.now(),
+            content = comment_form.comment.data
+        )
+
+        db.session.add(comment)
+        db.session.commit()
+        return redirect(url_for('forum_page', id=id))
+
+    return render_template('forum.html', posts = posts, comments =comments, id=id, post_form = post_form, comment_form = comment_form)
 
 @app.route('/enrol/<int:id>', methods=['GET', 'POST'])
 @login_required
@@ -450,6 +479,23 @@ class Enrollment(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     course_id = db.Column(db.Integer, db.ForeignKey('course.id'))
     enrollmentDate = db.Column(db.DateTime, default=datetime.utcnow)
+
+class Post(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    discussion_forum_id = db.Column(db.Integer, db.ForeignKey('course.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    posted_date = db.Column(db.DateTime, default=datetime.utcnow)
+    content = db.Column(db.Text)
+    course = db.relationship('Course', backref='posts')
+
+class Comment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    content = db.Column(db.Text)
+    commented_date = db.Column(db.DateTime, default=datetime.utcnow)
+    post = db.relationship('Post', backref=db.backref('comments', lazy=True))
+
 
 def get_enrolled_courses(user_id):
     user = User.query.get(user_id)

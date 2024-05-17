@@ -2,11 +2,16 @@ from flask import Flask, render_template, flash, request, redirect, url_for
 from datetime import datetime 
 from datetime import date
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import exists, select
 from flask_migrate import Migrate
 from werkzeug.security import generate_password_hash, check_password_hash 
 from flask_login import UserMixin, login_user, LoginManager, login_required, logout_user, current_user
 from webforms import UserForm, LoginForm, PostForm, SearchForm, NamerForm, PasswordForm
 from flask_ckeditor import CKEditor
+import numpy as np
+
+#export FLASK_ENV=development
+#export FLASK_APP=gamification.py
 
 
 #create a Flask instance
@@ -16,13 +21,14 @@ ckeditor = CKEditor(app)
 #Old SQLite Database
 #app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 #New MySQL DB
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:root@localhost/our_users'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:root@localhost/gamification'
 
 #Secret Key
 app.config['SECRET_KEY'] = "@45665Fdsdss456kl"
 #Initialize the Database
 db = SQLAlchemy(app)
 migrate=Migrate(app,db)
+app.app_context().push()
 
 # Flask Login configurations
 login_manager = LoginManager()
@@ -31,7 +37,7 @@ login_manager.login_view= 'login'
 
 @login_manager.user_loader
 def load_user(user_id):
-    return Users.query.get(int(user_id))
+    return User.query.get(int(user_id))
 
 # Pass stuff to Navbar
 @app.context_processor
@@ -44,34 +50,32 @@ def base():
 def index():
     return render_template('index.html')  
 
-@app.route('/user/<name>')
-def user(name):
-    return render_template('user.html', user_name=name)  
-
 @app.route('/user/add', methods=['GET', 'POST'])
 def add_user():
     name = None
     form = UserForm()
     if form.validate_on_submit():
-        user = Users.query.filter_by(email=form.email.data).first()
+        user = User.query.filter_by(email=form.email.data).first()
         if user is None:
             #Hash the Password!!
             hashed_pw = generate_password_hash(form.password_hash.data, "pbkdf2:sha256")
-            user = Users(name=form.name.data, username=form.username.data, email=form.email.data, favorite_color=form.favorite_color.data, password_hash=hashed_pw)
+            user = User(first_name=form.first_name.data, last_name=form.last_name.data, username=form.username.data, email=form.email.data, role= 'student', password_hash=hashed_pw)
             db.session.add(user)
             db.session.commit()
-        name = form.name.data
-        form.name.data = ''
+        name = form.username.data                               #change: name to username and also in the template
+        form.first_name.data = ''
+        form.last_name.data = ''
         form.username.data = ''
         form.email.data = ''
-        form.favorite_color.data=''
         form.password_hash.data=''
-        flash("user Added Successfully!")
-    our_users = Users.query.order_by(Users.date_added)
+        flash("Registration has been completed successfully. Please log in!")
+        return redirect(url_for('login'))
+
+    our_users = User.query.order_by(User.date_added)
     return render_template('add_user.html', 
                            form=form,
                            name=name,
-                           our_users=our_users)  
+                           our_users=our_users)         #change: need to redirect to the login page                
 
 
 #Update Database Record
@@ -79,12 +83,12 @@ def add_user():
 @login_required
 def update(id):
     form=UserForm()
-    user_to_update=Users.query.get_or_404(id)
+    user_to_update=User.query.get_or_404(id)
     if request.method == 'POST':
-        user_to_update.name =  request.form['name']
+        user_to_update.first_name =  request.form['first_name']
+        user_to_update.last_name =  request.form['last_name']
         user_to_update.username =  request.form['username']
         user_to_update.email =  request.form['email']
-        user_to_update.favorite_color =  request.form['favorite_color']
         try:
             db.session.commit()
             flash("User Updated Successfully!")
@@ -104,16 +108,17 @@ def update(id):
 
 #Delete Database Record
 @app.route('/delete/<int:id>', methods=['GET', 'POST'])
+@login_required
 def delete(id):
     name = None
     form = UserForm()
-    user_to_delete=Users.query.get_or_404(id)
+    user_to_delete=User.query.get_or_404(id)
     try:
         db.session.delete(user_to_delete)
         db.session.commit()
         flash("User Deleted Successfully!")
 
-        our_users = Users.query.order_by(Users.date_added)
+        our_users = User.query.order_by(User.date_added)
         return render_template('add_user.html', 
                                 form=form,
                                 name=name,
@@ -131,7 +136,7 @@ def delete(id):
 def login():
     form = LoginForm()
     if form.validate_on_submit():
-        user = Users.query.filter_by(username=form.username.data).first()
+        user = User.query.filter_by(username=form.username.data).first()
         if user:
             # Check the hash
             if check_password_hash(user.password_hash, form.password.data):
@@ -161,28 +166,43 @@ def logout():
 def dashboard():
     form=UserForm()
     id = current_user.id
-    user_to_update=Users.query.get_or_404(id)
+    enrolled_courses = get_enrolled_courses(id)
+    user_to_update=User.query.get_or_404(id)
+    total_score = QuizSubmission.query.filter_by(user_id=id, is_correct_answer=True).count()
+    marks_level = [50, 100, 200, 500, 1000]
+    next_target = next_higher_number(total_score, marks_level)
+
+
     if request.method == 'POST':
-        user_to_update.name =  request.form['name']
+        user_to_update.first_name =  request.form['first_name']
+        user_to_update.last_name =  request.form['last_name']
         user_to_update.username =  request.form['username']
         user_to_update.email =  request.form['email']
-        user_to_update.favorite_color =  request.form['favorite_color']
         try:
             db.session.commit()
             flash("User Updated Successfully!")
             return render_template("dashboard.html", 
                                     form=form,
-                                    user_to_update=user_to_update)
+                                    user_to_update=user_to_update,
+                                    total_score=total_score,
+                                    next_target = next_target,
+                                    enrolled_courses=enrolled_courses)
 
         except:
             flash("Looks like there was a problem....try again!")
             return render_template("dashboard.html", 
                                     form=form,
-                                    user_to_update=user_to_update)
+                                    user_to_update=user_to_update,
+                                    total_score=total_score,
+                                    next_target=next_target)
     else:
         return render_template("dashboard.html", 
                                     form=form,
-                                    user_to_update=user_to_update)
+                                    user_to_update=user_to_update,
+                                    total_score=total_score,
+                                    next_target=next_target,
+                                    enrolled_courses=enrolled_courses)
+
     return render_template('dashboard.html')
 
 
@@ -197,146 +217,182 @@ def page_not_found(e):
 def page_not_found(e):
     return render_template("500.html"), 500
 
-# Add Post Page
-@app.route('/add-post', methods=['GET', 'POST'])
-#@login_required
-def add_post():
-    form = PostForm()
-    if form.validate_on_submit():
-        poster = current_user.id
-        post = Posts(title=form.title.data, content=form.content.data, poster_id=poster, slug=form.slug.data)
-        form.title.data = ''
-        form.content.data = ''
-        #form.author.data = ''
-        form.slug.data = ''
-
-        #Add post data to database 
-        db.session.add(post)
-        db.session.commit()
-
-        #Return a message
-        flash("Blog Post Submitted Successfully!")
-
-    #Redirect to the webpage 
-    return render_template('add_post.html', form=form)  
-
-# Add Post Page
-@app.route('/posts')
-def posts():
-    #Grab all the posts from the database
-    posts=Posts.query.order_by(Posts.date_posted)
-    return render_template('posts.html',posts=posts)
-
-# Add Post Page
-@app.route('/posts/<int:id>')
-def post(id):
-    post=Posts.query.get_or_404(id)
-    return render_template('post.html',post=post)
-
-# Edit Post Page
-@app.route('/posts/edit/<int:id>', methods=['GET', 'POST'])
+# Quiz Page
 @login_required
-def edit_post(id):
-    form = PostForm()
-    post_to_update=Posts.query.get_or_404(id)
-    if form.validate_on_submit():
-        post_to_update.title=form.title.data
-        #post_to_update.author=form.author.data
-        post_to_update.slug=form.slug.data
-        post_to_update.content=form.content.data
-        #Update Database
-        db.session.add(post_to_update)
-        db.session.commit()
-        flash("Psot Has Been Updaed!")
-        return redirect(url_for('post', id=post_to_update.id))
+@app.route('/quiz')
+def quiz():
+    #id=current_user.id
+    enrolled_courses = current_user.courses
 
-    if current_user.id == post_to_update.poster_id:        
-        form.title.data=post_to_update.title
-        #form.author.data=post_to_update.author
-        form.slug.data=post_to_update.slug
-        form.content.data=post_to_update.content
-        return render_template('edit_post.html', form=form)
-    else:
-         #Return a message
-        flash("You Are Not Authorized To Edit That Post!")
+    return render_template('quiz.html', 
+                            enrolled_courses=enrolled_courses )
 
-        #Grab all the posts from the database
-        posts=Posts.query.order_by(Posts.date_posted)
-        return render_template('posts.html',posts=posts)
 
-#Delete Post
-@app.route('/posts/delete/<int:id>')
+# Forum Selection Page
 @login_required
-def delete_post(id):
-    post_to_delete = Posts.query.get_or_404(id)
+@app.route('/forum' , methods=['GET', 'POST'])
+def forum_list():
     id=current_user.id
-    if id == post_to_delete.poster.id:
-        try:
-            db.session.delete(post_to_delete)
+    enrolled_courses = get_courses_to_enroll(id)
+
+    return render_template('forum_list.html', 
+                            enrolled_courses=enrolled_courses )
+
+# Selected Forum Page
+@login_required
+@app.route('/forum/<int:id>', methods=['GET', 'POST'])
+def forum_page(id):
+    #id=current_user.id
+    #enrolled_courses = Course.query.all()
+
+    return render_template('forum.html', )
+
+@app.route('/enrol/<int:id>', methods=['GET', 'POST'])
+@login_required
+def enroll(id):
+    if request.method == 'POST':
+        user_id = current_user.id 
+        course_id = request.form.get('course_id')
+
+        course = Course.query.get(course_id)
+        
+
+        if current_user and course:
+            enrollment = Enrollment(
+                user_id=user_id,
+                course_id=course_id,
+                enrollmentDate=datetime.now(),
+            )
+
+            db.session.add(enrollment)
             db.session.commit()
 
-            #Return a message
-            flash("Blog Post was Deleted!")
-            
-            #Grab all the posts from the database
-            posts=Posts.query.order_by(Posts.date_posted)
-            return render_template('posts.html',posts=posts)
-        
-        except:  
-            #Return an error message      
-            flash("There was a problem deleting post, try again... ")
+            return redirect(url_for('dashboard'))
 
-    else:
-        #Return a message
-        flash("You Are Not Authorized To Delete That Post!")
-        
-        #Grab all the posts from the database
-        posts=Posts.query.order_by(Posts.date_posted)
-        return render_template('posts.html',posts=posts)
+        else:
+            return "Student or COurse not found"
+    courses = Course.query.all()
+    enrolled_courses = get_courses_to_enroll(id)
+    return render_template('enrolment.html', 
+                            courses=courses , enrolled_courses=enrolled_courses)
+
+# Quiz Selection Page
+@login_required
+@app.route('/quiz-selection/<int:course_id>')
+def quiz_selection(course_id):
+    #quiz_sets = QuizSet.query.filter_by(course_id=course_id)
+    #results = QuizSet.query.filter_by(course_id=course_id).with_entities(QuizSet.id, QuizSet.name, QuizSet.attribute1).add_columns("value_for_attribute2").all()
+
+    from sqlalchemy import exists
+
+
+
+    # Define a subquery to check if the quiz_set_id exists in the quiz_submission table
+    subquery = exists().where((QuizSubmission.quiz_set_id == QuizSet.id) &(QuizSubmission.user_id == current_user.id))
+
+    # Filter QuizSet records by course_id and add a new attribute indicating if the quiz_set_id exists in the quiz_submission table
+    quiz_sets = (
+        QuizSet.query
+        .filter_by(course_id=course_id)
+        .add_columns(subquery.label('is_quiz_taken'))
+        .all()
+    )
     
-#Create Search Function
-@app.route('/search', methods=['POST'])
-def search():
-    form = SearchForm()
-    posts = Posts.query 
-    if form.validate_on_submit(): 
-        # Get data from submitted form 
-        post.searched=form.searched.data
-        # Query the database
-        posts = posts.filter(Posts.content.like('%' + post.searched + '%'))
-        posts = posts.order_by(Posts.title).all()
 
-        return render_template('search.html',
-                                form=form,
-                                searched=post.searched,
-                                posts=posts)
+    return render_template('quiz_selection.html', 
+                            quiz_sets=quiz_sets
+                            )   
+
+# Quiz Questions
+@login_required  
+@app.route('/quiz-exam/<int:quiz_set_id>', methods=['GET', 'POST'])                    
+def quiz_exam(quiz_set_id):
+    quiz_questions=QuizQuestion.query.filter_by(quiz_set_id=quiz_set_id)
+    quiz_question_count = quiz_questions.count()
+    quiz_set = QuizSet.query.get_or_404(quiz_set_id);
+    current_user_id = current_user.id
+    total_correct_answer =  QuizSubmission.query.filter_by(user_id=current_user_id, quiz_set_id=quiz_set_id, is_correct_answer=True).count()
+    if request.method == 'POST':
+        for quiz_question in quiz_questions:
+            given_answer = given_answer = int(request.form[f'question-{quiz_question.id}']) if request.form.get(f'question-{quiz_question.id}') is not None else 0
+            if given_answer ==  quiz_question.correct_answer:
+                is_correct_answer = True
+                total_correct_answer=total_correct_answer+1
+            else:
+                is_correct_answer = False
+            quiz_submission = QuizSubmission(user_id=current_user_id, quiz_set_id=quiz_set_id, quiz_question_id=quiz_question.id,given_answer=given_answer, is_correct_answer=is_correct_answer)
+            db.session.add(quiz_submission)
+        try:   
+            db.session.commit()
+            flash("Yor Quiz Exam is Over! Thank You.") 
+            return render_template('quiz_exam.html',
+                            quiz_set_id=quiz_set_id,
+                            quiz_set=quiz_set,
+                            quiz_questions=quiz_questions,
+                            quiz_question_count = quiz_question_count,
+                            total_correct_answer=total_correct_answer)
+        except:
+            flash("Looks like there was a problem submitting your exam....try again!") 
+            return render_template('quiz_exam.html',
+                            quiz_set_id=quiz_set_id,
+                            quiz_set=quiz_set,
+                            quiz_questions=quiz_questions,
+                            quiz_question_count = quiz_question_count,
+                            total_correct_answer=total_correct_answer)
+
+    return render_template('quiz_exam.html',
+                            quiz_set_id=quiz_set_id,
+                            quiz_set=quiz_set,
+                            quiz_questions=quiz_questions,
+                            quiz_question_count = quiz_question_count,
+                            total_correct_answer=total_correct_answer)
+
+
+
 
 # Create Admin
 @app.route('/admin')
 @login_required
 def admin():
-    id = current_user.id 
-    if id == 21:
-        return render_template('admin.html')  
+    current_user_email = current_user.email
+    if current_user_email == 'admin@gmail.com':
+        our_users = User.query.order_by(User.date_added)
+        return render_template('admin.html',
+                               our_users=our_users)  
     else:
         flash("Sorry you must be the Admin to access the admin page...")
         return redirect(url_for('dashboard'))
+    
+
+def next_higher_number(number, marks_level):
+    for mark in marks_level:
+        if mark > number:
+            return mark
+    return 0    
 
 ################################################################ DB Models ################################################################################
 
+user_course = db.Table('user_course',
+                    db.Column('user_id', db.Integer, db.ForeignKey('user.id')),
+                    db.Column('course_id', db.Integer, db.ForeignKey('course.id'))
+                    )
 
 # Create Model
-class Users(db.Model, UserMixin):
+class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(200), nullable=False)
+    first_name = db.Column(db.String(200), nullable=False)
+    last_name = db.Column(db.String(200), nullable=False)
     username = db.Column(db.String(20), nullable=False, unique=True)
     email = db.Column(db.String(120), nullable=False, unique=True)
-    favorite_color = db.Column(db.String(120))
+    role = db.Column(db.String(50), nullable=False)
+    enrolments = db.relationship('Enrollment', backref='enroller')
     date_added = db.Column(db.DateTime, default=datetime.utcnow)
     #Do some password stuff
     password_hash = db.Column(db.String(128))
-    #User Can Have Many Posts
-    posts = db.relationship('Posts', backref='poster')
+    #User Can Have Many Courses
+    courses = db.relationship('Course', secondary=user_course, backref='users') #user.courses + course.users (backref comes into play)
+    #User Can Have Many QuizSubmission
+    quiz_submissions = db.relationship('QuizSubmission', backref='quiz_taker')
 
     @property
     def password(self):
@@ -353,75 +409,63 @@ class Users(db.Model, UserMixin):
     def __repr__(self):
         return '<Name %r>' % self.name
 
-#Create a Blog Post Model 
-class Posts(db.Model):
-    id =  db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(255))
-    content = db.Column(db.Text)
-    author = db.Column(db.String(255))
-    date_posted = db.Column(db.DateTime, default=datetime.utcnow)
-    slug = db.Column(db.String(255))
-    #Foreign Key To Link Users (refer to primary key of the user)
-    poster_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+
+# Create Course Model
+class Course(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    enrollments = db.relationship('Enrollment', backref='course')
+    quiz_sets = db.relationship('QuizSet', backref='course')
+
+# Create quiz_set Model
+class QuizSet(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    course_id = db.Column(db.Integer, db.ForeignKey('course.id'))
+    quiz_questions = db.relationship('QuizQuestion', backref='quiz_set')
+    quiz_submissions = db.relationship('QuizSubmission', backref='quiz_set')
+
+class QuizQuestion(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    question = db.Column(db.String(255), nullable=False)
+    option1 = db.Column(db.String(255), nullable=False)
+    option2 = db.Column(db.String(255), nullable=False)
+    option3 = db.Column(db.String(255), nullable=False)
+    option4 = db.Column(db.String(255), nullable=False)
+    correct_answer = db.Column(db.Integer, nullable=False)
+    quiz_set_id = db.Column(db.Integer, db.ForeignKey('quiz_set.id'))
+    quiz_submissions = db.relationship('QuizSubmission', backref='quiz_question')
 
 
-################################################################ TEST ################################################################################
-#Create Name Page
-@app.route('/name', methods=['GET', 'POST'])
-def name():
-    name = None
-    form = NamerForm()
-    #Validate Form
-    if form.validate_on_submit():
-        name = form.name.data
-        form.name.data = ''
-        flash("Form Submitted Successfully")
-    return render_template('name.html', 
-                           name=name,
-                           form=form)  
+class QuizSubmission(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    quiz_set_id = db.Column(db.Integer, db.ForeignKey('quiz_set.id'))
+    quiz_question_id = db.Column(db.Integer, db.ForeignKey('quiz_question.id')) 
+    given_answer =  db.Column(db.Integer, nullable=False)
+    is_correct_answer = db.Column(db.Boolean, default=False, nullable=False)
 
-#Create Password Test Page
-@app.route('/test_pw', methods=['GET', 'POST'])
-def test_pw():
-    email = None
-    password = None
-    pw_to_check = None
-    passed = None
+class Enrollment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    course_id = db.Column(db.Integer, db.ForeignKey('course.id'))
+    enrollmentDate = db.Column(db.DateTime, default=datetime.utcnow)
 
-    form = PasswordForm()
-    #Validate Form
-    if form.validate_on_submit():
-        email = form.email.data
-        password = form.password_hash.data
-        # CLear the form
-        form.email.data = ''
-        form.password_hash.data=''
-
-        #Lookup User by Email Address
-        pw_to_check = Users.query.filter_by(email=email).first()
-
-        # Check Hased Password
-        passed = check_password_hash(pw_to_check.password_hash, password)
-
-    return render_template('test_pw.html', 
-                           email=email,
-                           password=password,
-                           pw_to_check=pw_to_check,
-                           passed=passed,
-                           form=form) 
-
-
-
-#Json API
-@app.route('/date')
-def get_current_date():
-    favorite_pizza = {
-        "Anindita": "Margherita",
-        "Oni": "Hawaiian",
-        "Podder": "Mushroom"
-    }
-    #return{ "Date": date.today()}
-    return favorite_pizza
+def get_enrolled_courses(user_id):
+    user = User.query.get(user_id)
+    if user:
+        return [enrollment.course.name for enrollment in user.enrolments]
+    else:
+        return []
+    
+def get_courses_to_enroll(user_id):
+    user = User.query.get(user_id)
+    courses = Course.query.all()
+    enrolled_courses = [enrollment.course for enrollment in user.enrolments]
+    if user:
+        return enrolled_courses 
+    else:
+        return []
 
 if __name__ == '__main__':
     app.run(debug=True)
