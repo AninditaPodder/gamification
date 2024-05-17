@@ -314,7 +314,7 @@ def quiz_exam(quiz_set_id):
     total_correct_answer =  QuizSubmission.query.filter_by(user_id=current_user_id, quiz_set_id=quiz_set_id, is_correct_answer=True).count()
     if request.method == 'POST':
         for quiz_question in quiz_questions:
-            given_answer = int(request.form[f'question-{quiz_question.id}'])
+            given_answer = given_answer = int(request.form[f'question-{quiz_question.id}']) if request.form.get(f'question-{quiz_question.id}') is not None else 0
             if given_answer ==  quiz_question.correct_answer:
                 is_correct_answer = True
                 total_correct_answer=total_correct_answer+1
