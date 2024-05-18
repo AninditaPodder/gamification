@@ -8,7 +8,6 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import  UserMixin,login_user, LoginManager, login_required, logout_user, current_user
 from webforms import UserForm, LoginForm,  SearchForm, NamerForm, PasswordForm,NewPostForm,NewCommentForm
 from flask_ckeditor import CKEditor
-#from models import db,User,Course,Enrollment,QuizSet,QuizQuestion,QuizSubmission,Post,Comment
 import numpy as np
 from sqlalchemy import exists
 
@@ -65,7 +64,7 @@ def add_user():
             user = User(first_name=form.first_name.data, last_name=form.last_name.data, username=form.username.data, email=form.email.data, role= 'student', password_hash=hashed_pw)
             db.session.add(user)
             db.session.commit()
-        name = form.username.data                               #change: name to username and also in the template
+        name = form.username.data                              
         form.first_name.data = ''
         form.last_name.data = ''
         form.username.data = ''
@@ -78,7 +77,7 @@ def add_user():
     return render_template('add_user.html', 
                            form=form,
                            name=name,
-                           our_users=our_users)         #change: need to redirect to the login page                
+                           our_users=our_users)                        
 
 
 #Update Database Record
@@ -237,7 +236,7 @@ def quiz():
 @app.route('/forum' , methods=['GET', 'POST'])
 def forum_list():
     id=current_user.id
-    enrolled_courses = get_courses_to_enroll(id)
+    enrolled_courses = get_enrolled_courses(id)
 
     return render_template('forum_list.html', 
                             enrolled_courses=enrolled_courses )
@@ -286,16 +285,11 @@ def enroll(id):
         course_id = request.form.get('course_id')
 
         course = Course.query.get(course_id)
+        user =  User.query.get_or_404(user_id)
         
 
-        if current_user and course:
-            enrollment = Enrollment(
-                user_id=user_id,
-                course_id=course_id,
-                enrollmentDate=datetime.now(),
-            )
-
-            db.session.add(enrollment)
+        if current_user and course:                     
+            user.courses.append(course)
             db.session.commit()
 
             return redirect(url_for('dashboard'))
@@ -303,7 +297,7 @@ def enroll(id):
         else:
             return "Student or COurse not found"
     courses = Course.query.all()
-    enrolled_courses = get_courses_to_enroll(id)
+    enrolled_courses = get_enrolled_courses(id)
     return render_template('enrolment.html', 
                             courses=courses , enrolled_courses=enrolled_courses)
 
@@ -413,7 +407,6 @@ class User(db.Model, UserMixin):
     username = db.Column(db.String(20), nullable=False, unique=True)
     email = db.Column(db.String(120), nullable=False, unique=True)
     role = db.Column(db.String(50), nullable=False)
-    enrolments = db.relationship('Enrollment', backref='enroller')
     date_added = db.Column(db.DateTime, default=datetime.utcnow)
     #Do some password stuff
     password_hash = db.Column(db.String(128))
@@ -499,18 +492,10 @@ class Comment(db.Model):
 def get_enrolled_courses(user_id):
     user = User.query.get(user_id)
     if user:
-        return [enrollment.course.name for enrollment in user.enrolments]
+        return user.courses
     else:
         return []
     
-def get_courses_to_enroll(user_id):
-    user = User.query.get(user_id)
-    courses = Course.query.all()
-    enrolled_courses = [enrollment.course for enrollment in user.enrolments]
-    if user:
-        return enrolled_courses 
-    else:
-        return []
 
 if __name__ == '__main__':
     app.run(debug=True)

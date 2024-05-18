@@ -12,13 +12,18 @@
     <br><br><br>
 
     <table class="table table-hover table-bordered table-striped">
-        {% for enrolled_course in enrolled_courses %}
-            <tr>
-                <td>
-                    {{ loop.index }}. <a href="{{url_for('quiz_selection',course_id=enrolled_course.id)}}">{{enrolled_course.name}}</a>
-                </td>
-            </tr>
-        {% endfor %}
+        {% if enrolled_courses  %}
+            {% for enrolled_course in enrolled_courses %}
+                <tr>
+                    <td>
+                        {{ loop.index }}. <a href="{{url_for('quiz_selection',course_id=enrolled_course.id)}}">{{enrolled_course.name}}</a>
+                    </td>
+                </tr>
+            {% endfor %}
+        {% else %}
+                <p>Please enroll in a course first.</p> 
+                <p>Please navigate to "Account" to complete enrollement. Thanks</p>       
+        {% endif %}
     </table>
 
 {% endblock %}
