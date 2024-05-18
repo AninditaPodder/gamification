@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3306
--- Generation Time: May 17, 2024 at 03:55 PM
+-- Generation Time: May 18, 2024 at 02:56 AM
 -- Server version: 8.3.0
 -- PHP Version: 8.2.18
 
@@ -54,7 +54,7 @@ CREATE TABLE IF NOT EXISTS `comment` (
   `content` text,
   `commented_date` datetime DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=MyISAM AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=MyISAM AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `comment`
@@ -64,7 +64,8 @@ INSERT INTO `comment` (`id`, `post_id`, `user_id`, `content`, `commented_date`) 
 (1, 4, 1, 'This is my comment', '2024-05-17 23:46:15'),
 (2, 5, 1, 'b', '2024-05-17 23:46:52'),
 (3, 6, 1, 'This is my !st comment', '2024-05-18 01:12:27'),
-(4, 7, 1, 'B', '2024-05-18 01:13:00');
+(4, 7, 1, 'B', '2024-05-18 01:13:00'),
+(5, 4, 9, 'hi\r\n', '2024-05-18 12:49:29');
 
 -- --------------------------------------------------------
 
@@ -96,35 +97,6 @@ INSERT INTO `course` (`id`, `name`) VALUES
 -- --------------------------------------------------------
 
 --
--- Table structure for table `enrollment`
---
-
-DROP TABLE IF EXISTS `enrollment`;
-CREATE TABLE IF NOT EXISTS `enrollment` (
-  `id` int NOT NULL AUTO_INCREMENT,
-  `user_id` int DEFAULT NULL,
-  `course_id` int DEFAULT NULL,
-  `enrollmentDate` datetime DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  KEY `course_id` (`course_id`),
-  KEY `user_id` (`user_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
---
--- Dumping data for table `enrollment`
---
-
-INSERT INTO `enrollment` (`id`, `user_id`, `course_id`, `enrollmentDate`) VALUES
-(1, 1, 2, '2024-05-17 16:58:43'),
-(2, 1, 3, '2024-05-17 17:54:51'),
-(3, 1, 1, '2024-05-17 19:28:30'),
-(4, 1, 5, '2024-05-17 19:28:35'),
-(5, 1, 6, '2024-05-17 19:28:39'),
-(6, 3, 5, '2024-05-17 23:15:02');
-
--- --------------------------------------------------------
-
---
 -- Table structure for table `post`
 --
 
@@ -136,7 +108,7 @@ CREATE TABLE IF NOT EXISTS `post` (
   `posted_date` datetime DEFAULT NULL,
   `content` text,
   PRIMARY KEY (`id`)
-) ENGINE=MyISAM AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=MyISAM AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `post`
@@ -149,7 +121,8 @@ INSERT INTO `post` (`id`, `discussion_forum_id`, `user_id`, `posted_date`, `cont
 (4, 6, 1, '2024-05-17 23:46:06', 'hello'),
 (5, 6, 1, '2024-05-17 23:46:38', 'What is the question no 2 ans ?\r\n'),
 (6, 1, 1, '2024-05-18 01:11:58', 'Hello\r\n'),
-(7, 1, 1, '2024-05-18 01:12:46', 'What is the answer to question 1');
+(7, 1, 1, '2024-05-18 01:12:46', 'What is the answer to question 1'),
+(8, 6, 9, '2024-05-18 12:49:37', 'what?\r\n');
 
 -- --------------------------------------------------------
 
@@ -301,7 +274,7 @@ CREATE TABLE IF NOT EXISTS `quiz_submission` (
   KEY `quiz_set_id` (`quiz_set_id`),
   KEY `user_id` (`user_id`),
   KEY `quiz_question_id` (`quiz_question_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=204 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=MyISAM AUTO_INCREMENT=220 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `quiz_submission`
@@ -346,7 +319,10 @@ INSERT INTO `quiz_submission` (`id`, `user_id`, `quiz_set_id`, `quiz_question_id
 (158, 1, 4, 48, 2, 1),
 (157, 1, 4, 47, 2, 1),
 (156, 1, 4, 46, 1, 1),
+(205, 7, 3, 41, 3, 0),
+(204, 7, 3, 11, 1, 0),
 (203, 1, 12, 73, 1, 1),
+(206, 7, 3, 42, 3, 0),
 (202, 1, 12, 72, 1, 1),
 (201, 1, 12, 71, 1, 1),
 (149, 1, 3, 43, 2, 1),
@@ -367,7 +343,20 @@ INSERT INTO `quiz_submission` (`id`, `user_id`, `quiz_set_id`, `quiz_question_id
 (134, 1, 2, 9, 3, 0),
 (133, 1, 1, 40, 1, 0),
 (132, 1, 1, 2, 3, 1),
-(131, 1, 1, 1, 2, 1);
+(131, 1, 1, 1, 2, 1),
+(207, 7, 3, 43, 3, 0),
+(208, 7, 3, 44, 3, 0),
+(209, 9, 11, 53, 1, 1),
+(210, 9, 11, 54, 1, 1),
+(211, 9, 11, 55, 1, 1),
+(212, 9, 11, 56, 1, 1),
+(213, 9, 11, 57, 1, 1),
+(214, 9, 11, 58, 1, 1),
+(215, 9, 11, 59, 1, 1),
+(216, 9, 11, 60, 1, 1),
+(217, 9, 11, 61, 1, 1),
+(218, 9, 11, 63, 1, 1),
+(219, 9, 11, 64, 1, 1);
 
 -- --------------------------------------------------------
 
@@ -388,7 +377,7 @@ CREATE TABLE IF NOT EXISTS `user` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `email` (`email`),
   UNIQUE KEY `username` (`username`)
-) ENGINE=MyISAM AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=MyISAM AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `user`
@@ -397,10 +386,9 @@ CREATE TABLE IF NOT EXISTS `user` (
 INSERT INTO `user` (`id`, `first_name`, `last_name`, `username`, `email`, `role`, `date_added`, `password_hash`) VALUES
 (1, 'Anindita', 'Podder', 'oni123', 'aninditapoddernitu@gmail.com', 'student', '2024-05-16 09:54:21', 'pbkdf2:sha256:600000$4C6cn4Ar4rzhrWCZ$06b903e9cf805e51621bdacca12effb7ad89e3b4d69df4220228f70c8f500d53'),
 (2, 'Admin', 'User', 'admin0001', 'admin@gmail.com', 'student', '2024-05-16 12:26:53', 'pbkdf2:sha256:600000$Cn6GeUFZYk4syqxm$b9090c4ebe4e5a0c0fca1ab0477947bc32b477a480a3b4c076724c74ff816363'),
-(3, 'Test', 'Test', 'test001', 'test0001@gmail.com', 'student', '2024-05-16 12:55:46', 'pbkdf2:sha256:600000$rcMMNNsuAZb4WVFJ$667970c2ff782f2fbcba3b01a72e9a9e4b0a27ff035083c8b9232f993fba964d'),
-(4, 'Test', 'User', 'test0001', 'test0002@gmail.com', 'student', '2024-05-17 03:46:19', 'pbkdf2:sha256:600000$0A5v6zsrQtajki9W$6944664bf2c609b8da9a5956468f3bcd685813f5bce30934064f860b39ef17e9'),
-(5, 'Test', 'test 2', 'test2', 'test2test1', 'student', '2024-05-17 09:11:23', 'pbkdf2:sha256:600000$GdPhJlYaImBHK6eK$415719c34bf6b510581654336ea9a6959e3f3271a07627c4ae34a399f3f52e2d'),
-(6, 'test1', 'Test2', 'Testtesttest', 'test3@gmail.com', 'student', '2024-05-17 15:14:03', 'pbkdf2:sha256:600000$feD6YZkouNAfeckd$cf584a56c12f18ef77e66b09037e603a9001178e8f24fec43baae531077765a0');
+(9, 'test', 'test', 'testtest', 'testtest@gmail.com', 'student', '2024-05-18 02:44:13', 'pbkdf2:sha256:600000$r7VkfsYyPmlLcY7T$3a07198923d91ee6d3aefab1db5fe34c11e697573a2dda9969eba6bab5dd33b3'),
+(8, 'Test002', 'Test002', 'test0002', 'test0002@gmail.com', 'student', '2024-05-18 02:31:26', 'pbkdf2:sha256:600000$iCg4MJJjnIKEL28y$d690dac096e60fcf3cab8eed07995309911ec9e9d01e013f533ddb0e7a3891ce'),
+(7, 'Test', 'Test', 'test0001', 'test0001@gmail.com', 'student', '2024-05-18 01:17:49', 'pbkdf2:sha256:600000$cjYbPN64zDMDORIT$19d8d345175d37d1e3e08181f78b3a87db632415a4f4c3f0316f5f2220ed5746');
 
 -- --------------------------------------------------------
 
@@ -426,7 +414,14 @@ INSERT INTO `user_course` (`user_id`, `course_id`) VALUES
 (1, 5),
 (1, 6),
 (1, 3),
-(4, 3);
+(4, 3),
+(1, 1),
+(1, 1),
+(7, 1),
+(7, 3),
+(8, 1),
+(9, 4),
+(9, 6);
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
